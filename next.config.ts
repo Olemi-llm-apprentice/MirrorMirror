@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Cloudflare Tunnel からのアクセスを許可
+  allowedDevOrigins: [
+    "*.trycloudflare.com",
+  ],
 };
 
 export default nextConfig;

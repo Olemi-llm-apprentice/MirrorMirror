@@ -22,6 +22,7 @@ import {
   ItemDetailsView,
   ShopMapView,
 } from "@/components";
+import { logger } from "@/lib/logger";
 
 interface Message {
   source: "user" | "ai";
@@ -67,6 +68,7 @@ export default function MirrorMirrorApp() {
   // ===== Client Tools =====
   const clientTools = useMemo(() => ({
     setGender: async ({ gender: g }: { gender: "mens" | "ladies" }): Promise<string> => {
+      logger.debug("🔧 [Client Tool] setGender called:", g);
       setGenderState(g);
       const label = g === "mens" ? "メンズ" : "レディース";
       return JSON.stringify({
@@ -77,10 +79,12 @@ export default function MirrorMirrorApp() {
     },
 
     showImageInputUI: async (): Promise<string> => {
+      logger.debug("🔧 [Client Tool] showImageInputUI called");
       setCurrentView("image-input");
       const result = await new Promise<{ success: boolean; image_id: string }>((resolve) => {
         imageUploadResolverRef.current = resolve;
       });
+      logger.debug("🔧 [Client Tool] showImageInputUI result:", result);
       return JSON.stringify(result);
     },
 
@@ -113,7 +117,7 @@ export default function MirrorMirrorApp() {
         setCurrentView("conversation");
         return JSON.stringify({ success: false, error: "生成に失敗しました" });
       } catch (error) {
-        console.error("Generate error:", error);
+        logger.error("Generate error:", error);
         setCurrentView("conversation");
         return JSON.stringify({ success: false, error: "生成中にエラーが発生しました" });
       }
@@ -214,12 +218,13 @@ export default function MirrorMirrorApp() {
   // ===== ElevenLabs Conversation Hook =====
   const conversation = useConversation({
     onConnect: () => {
-      console.log("Connected to ElevenLabs");
+      logger.info("✅ Connected to ElevenLabs");
     },
     onDisconnect: () => {
-      console.log("Disconnected from ElevenLabs");
+      logger.info("❌ Disconnected from ElevenLabs");
     },
     onMessage: (message) => {
+      logger.debug("📩 [ElevenLabs] Message:", message);
       if (message.message) {
         setMessages((prev) => [
           ...prev,
@@ -231,7 +236,7 @@ export default function MirrorMirrorApp() {
       }
     },
     onError: (error) => {
-      console.error("Conversation error:", error);
+      logger.error("🚨 Conversation error:", error);
     },
   });
 
@@ -267,7 +272,7 @@ export default function MirrorMirrorApp() {
         // Fallback to public agent
         const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
         if (!agentId) {
-          console.error("Agent ID not configured");
+          logger.error("Agent ID not configured");
           return;
         }
         sessionConfig = {
@@ -282,7 +287,7 @@ export default function MirrorMirrorApp() {
 
       await conversation.startSession(sessionConfig);
     } catch (error) {
-      console.error("Failed to start conversation:", error);
+      logger.error("Failed to start conversation:", error);
     }
   }, [clientTools, conversation, gender, userImageId]);
 
@@ -381,7 +386,7 @@ export default function MirrorMirrorApp() {
         setShops(data.shops || []);
         setCurrentView("shop-map");
       } catch (error) {
-        console.error("Failed to get shops:", error);
+        logger.error("Failed to get shops:", error);
       }
     },
     [userLocation]

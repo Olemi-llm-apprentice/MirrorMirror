@@ -100,3 +100,84 @@ Cursor Rules の設定確認と作業ログへの追記
 
 ---
 
+[2025-12-11 19:57:27]
+
+## 作業内容
+
+ElevenLabs Agent の Client Tools 設定問題の調査と解決
+
+### 実施した作業
+
+- 「写真撮影フェイズに移行しない」問題の原因調査
+- 原因特定：ElevenLabsダッシュボード側でClient Toolsが未設定だった
+- ElevenLabs API を使用した自動セットアップスクリプトの作成
+- 7つのClient Tools（setGender, showImageInputUI, generateCoordinates, selectGenre, selectCoordinate, showShopMap, goBack）をAPIで作成
+- Agent への Tools紐づけと System Prompt の設定
+- デバッグ用ログ出力の追加
+
+### 変更したファイル
+
+#### セットアップスクリプト（新規作成）
+- `scripts/setup-elevenlabs.ps1` - ElevenLabs Agent 完全セットアップスクリプト（Tools作成 + Agent設定）
+- `scripts/setup-elevenlabs-tools.ps1` - Tools作成専用スクリプト
+- `scripts/setup-elevenlabs-prompt.ps1` - System Prompt設定専用スクリプト
+
+#### デバッグログ追加
+- `src/app/page.tsx` - Client Tools呼び出しとElevenLabsイベントのログ出力追加
+
+### 備考
+
+- 問題の根本原因：フロントエンドでclientToolsを定義しても、ElevenLabsのAgent設定（ダッシュボードまたはAPI）でToolsを登録しないと、LLMはそのツールの存在を認識しない
+- ElevenLabs APIでは、`parameters`はJSON Schema形式で指定する必要がある（配列形式ではエラーになる）
+- `expects_response: true` を設定することで、Agentはツールの実行結果を待ってから次の発話を行う
+- 作成されたTool IDs:
+  - setGender: tool_1701kc6gs4q4f4b9afc9azbwg4bk
+  - showImageInputUI: tool_4901kc6gs53techsftzasn2t6bw0
+  - generateCoordinates: tool_9801kc6gs5f6ed2a5vwf5frk75ny
+  - selectGenre: tool_6501kc6gs5tzex19dfssfak0yv4t
+  - selectCoordinate: tool_6401kc6gs66aedht4h41m8w5gkrb
+  - showShopMap: tool_5101kc6gs6h9e5bvfay721rgps9a
+  - goBack: tool_9601kc6gs6wcf6frzwtccym7z4ct
+
+---
+
+[2025-12-11 20:10:40]
+
+## 作業内容
+
+デバッグ用ログファイル出力機能の追加
+
+### 実施した作業
+
+- ロガーユーティリティの作成（クライアント用/サーバー用を分離）
+- 環境変数 `DEBUG_LOG_TO_FILE` によるログファイル出力の切り替え機能
+- 既存の `console.log` / `console.error` をロガーに置き換え
+- ログレベル（debug, info, warn, error）に応じたカラー出力対応
+- 日付ごとのログファイル保存（`logs/YYYY-MM-DD.log`）
+
+### 変更したファイル
+
+#### ロガーユーティリティ（新規作成）
+- `src/lib/logger.ts` - クライアントサイド用ロガー（コンソール出力のみ）
+- `src/lib/server-logger.ts` - サーバーサイド用ロガー（コンソール + ファイル出力）
+
+#### 環境変数設定
+- `env.example` - `DEBUG_LOG_TO_FILE` 設定を追加
+
+#### ロガー適用（console.log → logger への置き換え）
+- `src/app/page.tsx` - クライアント側ログをloggerに置き換え
+- `src/components/ImageInputView.tsx` - エラーログをloggerに置き換え
+- `src/app/api/elevenlabs/signed-url/route.ts` - serverLoggerに置き換え
+- `src/app/api/generate-coordinates/route.ts` - serverLoggerに置き換え
+- `src/app/api/generate-remaining/route.ts` - serverLoggerに置き換え
+- `src/app/api/items/[itemId]/shops/route.ts` - serverLoggerに置き換え
+
+### 備考
+
+- Next.jsではクライアントサイドで `fs` モジュールが使用できないため、クライアント用とサーバー用を分離
+- ファイル出力はサーバーサイドのAPIルートのみで有効（`DEBUG_LOG_TO_FILE=true` 設定時）
+- `logs/` フォルダは既に `.gitignore` に含まれているため、ログファイルはgitにコミットされない
+- ログ形式: `[YYYY-MM-DDTHH:mm:ss.sssZ] [LEVEL] メッセージ`
+
+---
+

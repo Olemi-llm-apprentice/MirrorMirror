@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { logger } from "@/lib/logger";
 
 interface ImageInputViewProps {
   onImageUploaded: (imageId: string, base64: string, mimeType: string) => void;
@@ -31,7 +32,7 @@ export function ImageInputView({ onImageUploaded, onBack }: ImageInputViewProps)
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      console.error("Error processing image:", error);
+      logger.error("Error processing image:", error);
       setIsProcessing(false);
     }
   }, [onImageUploaded]);
@@ -54,7 +55,7 @@ export function ImageInputView({ onImageUploaded, onBack }: ImageInputViewProps)
         videoRef.current.srcObject = mediaStream;
       }
     } catch (error) {
-      console.error("Camera error:", error);
+      logger.error("Camera error:", error);
       // Fallback to file input
       fileInputRef.current?.click();
     }

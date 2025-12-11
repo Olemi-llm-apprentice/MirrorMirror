@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverLogger } from "@/lib/server-logger";
 
 export async function GET() {
   const apiKey = process.env.ELEVENLABS_API_KEY;
@@ -32,7 +33,7 @@ export async function GET() {
 
     if (!response.ok) {
       const error = await response.text();
-      console.error("ElevenLabs API error:", error);
+      serverLogger.error("ElevenLabs API error:", error);
       return NextResponse.json(
         { error: "Failed to get signed URL" },
         { status: response.status }
@@ -42,7 +43,7 @@ export async function GET() {
     const data = await response.json();
     return NextResponse.json({ signedUrl: data.signed_url });
   } catch (error) {
-    console.error("Signed URL error:", error);
+    serverLogger.error("Signed URL error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

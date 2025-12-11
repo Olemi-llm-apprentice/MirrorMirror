@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { GenrePreview, GenreId, Gender } from "@/types";
+import { serverLogger } from "@/lib/server-logger";
 
 const GENRES: { id: GenreId; name: string; tagline: string }[] = [
   { id: "casual", name: "カジュアル", tagline: "リラックスしたおしゃれスタイル" },
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
           tagline: text.slice(0, 100) || genre.tagline,
         });
       } catch (genError) {
-        console.error(`Error generating ${genre.name}:`, genError);
+        serverLogger.error(`Error generating ${genre.name}:`, genError);
         // Add placeholder on error
         genre_previews.push({
           genre_id: genre.id,
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
       genre_previews,
     });
   } catch (error) {
-    console.error("Generate coordinates error:", error);
+    serverLogger.error("Generate coordinates error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to generate coordinates" },
       { status: 500 }

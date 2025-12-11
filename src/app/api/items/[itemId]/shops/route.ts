@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Shop } from "@/types";
+import { serverLogger } from "@/lib/server-logger";
 
 // Mock shop data - in production, this would query a real database
 const MOCK_SHOPS: Shop[] = [
@@ -91,7 +92,7 @@ export async function GET(
       shops: shopsWithDistance,
     });
   } catch (error) {
-    console.error("Get shops error:", error);
+    serverLogger.error("Get shops error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to get shops" },
       { status: 500 }

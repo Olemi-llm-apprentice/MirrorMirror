@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Coordinate, GenreId, Item } from "@/types";
+import { serverLogger } from "@/lib/server-logger";
 
 // Mock data for demonstration - in production, this would use actual AI generation
 const MOCK_ITEMS: Record<string, Item[]> = {
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
       coordinates,
     });
   } catch (error) {
-    console.error("Generate remaining error:", error);
+    serverLogger.error("Generate remaining error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to generate coordinates" },
       { status: 500 }
