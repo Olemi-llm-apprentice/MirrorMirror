@@ -29,7 +29,8 @@ export default function LandingPage() {
     // Add 2 items before and 3 items after for smooth infinite scrolling
     const extended = [];
     for (let i = -2; i < categories.length + 3; i++) {
-      const index = ((i % categories.length) + categories.length) % categories.length;
+      const index =
+        ((i % categories.length) + categories.length) % categories.length;
       extended.push({ ...categories[index], key: i });
     }
     return extended;
@@ -42,7 +43,7 @@ export default function LandingPage() {
           {/* Logo */}
           <div className="flex items-center gap-1">
             <div className="text-red-600 text-3xl font-bold">★</div>
-            <h1 className="text-2xl font-bold">MirrorMirror</h1>
+            <h1 className="text-2xl font-bold text-black">MirrorMirror</h1>
           </div>
         </div>
       </header>
@@ -77,14 +78,16 @@ export default function LandingPage() {
                   <div
                     className="flex transition-transform duration-700 ease-in-out"
                     style={{
-                      transform: `translateX(calc(-${(currentSlide + 2) * (100 / 3)}% - ${(currentSlide + 2) * 1.5}rem))`,
+                      transform: `translateX(calc(-${
+                        (currentSlide + 2) * (100 / 3)
+                      }% - ${(currentSlide + 2) * 1.5}rem))`,
                     }}
                   >
                     {getExtendedCategories().map((category, index) => (
                       <div
                         key={category.key}
                         className="flex-shrink-0 px-3"
-                        style={{ width: 'calc(33.333% - 1rem)' }}
+                        style={{ width: "calc(33.333% - 1rem)" }}
                       >
                         <div className="flex flex-col items-center">
                           <div className="relative w-full aspect-square rounded-lg overflow-hidden border-2 border-gray-200 hover:border-gray-300 transition-colors cursor-pointer bg-white">
