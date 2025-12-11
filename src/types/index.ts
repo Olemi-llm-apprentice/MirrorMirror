@@ -4,7 +4,6 @@ export type AppView =
   | "image-input"
   | "loading"
   | "genre-list"
-  | "coordinate-list"
   | "item-details"
   | "shop-map";
 
@@ -21,6 +20,10 @@ export interface GenrePreview {
   cover_image: string;
   preview_image_url: string;
   tagline: string;
+  // For progressive image loading
+  original_image_url?: string; // Original coordinate image (shown while generating)
+  generated_image_url?: string; // AI-generated image (replaces original when ready)
+  is_generating?: boolean; // Whether the image is currently being generated
 }
 
 // Coordinate Types

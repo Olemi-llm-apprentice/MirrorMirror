@@ -18,6 +18,8 @@ export function ImageInputView({ onImageUploaded, onBack }: ImageInputViewProps)
 
   const processImage = useCallback(async (file: File) => {
     setIsProcessing(true);
+    logger.info(`Processing image: ${file.name}, size: ${file.size}, type: ${file.type}`);
+    
     try {
       // Create preview
       const url = URL.createObjectURL(file);
@@ -26,9 +28,19 @@ export function ImageInputView({ onImageUploaded, onBack }: ImageInputViewProps)
       // Convert to base64
       const reader = new FileReader();
       reader.onload = () => {
-        const base64 = (reader.result as string).split(",")[1];
+        const result = reader.result as string;
+        const base64 = result.split(",")[1];
         const imageId = `img-${Date.now()}`;
+        
+        logger.info(`Image converted to base64: length=${base64.length}, mime=${file.type}`);
+        logger.info(`Calling onImageUploaded with imageId=${imageId}`);
+        
         onImageUploaded(imageId, base64, file.type);
+        setIsProcessing(false);
+      };
+      reader.onerror = () => {
+        logger.error("FileReader error:", reader.error);
+        setIsProcessing(false);
       };
       reader.readAsDataURL(file);
     } catch (error) {

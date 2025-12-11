@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { useConversation } from "@elevenlabs/react";
 import type {
   AppView,
@@ -18,7 +18,6 @@ import {
   ImageInputView,
   LoadingView,
   GenreListView,
-  CoordinateListView,
   ItemDetailsView,
   ShopMapView,
 } from "@/components";
@@ -40,6 +39,10 @@ export default function MirrorMirrorApp() {
   const [userImageMimeType, setUserImageMimeType] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<Location | null>(null);
 
+  // Refs to always have the latest image data (avoids stale closure issues)
+  const userImageBase64Ref = useRef<string | null>(null);
+  const userImageMimeTypeRef = useRef<string | null>(null);
+
   // ===== Content Data =====
   const [genrePreviews, setGenrePreviews] = useState<GenrePreview[]>([]);
   const [coordinates, setCoordinates] = useState<Coordinate[]>([]);
@@ -47,6 +50,84 @@ export default function MirrorMirrorApp() {
   const [selectedCoordinate, setSelectedCoordinate] = useState<Coordinate | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [shops, setShops] = useState<Shop[]>([]);
+
+  // ===== Background Image Generation =====
+  const generateSingleImage = useCallback(async (genreId: GenreId, genderParam: Gender, imageBase64?: string | null, imageMimeType?: string | null) => {
+    try {
+      // Use passed params or fallback to state (passed params are more reliable)
+      const base64ToUse = imageBase64 ?? userImageBase64;
+      const mimeTypeToUse = imageMimeType ?? userImageMimeType;
+      
+      logger.debug(`Starting background image generation for ${genreId}...`);
+      logger.debug(`User image provided: ${!!base64ToUse}, mime: ${mimeTypeToUse}`);
+      
+      const res = await fetch("/api/generate-single-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          genre_id: genreId,
+          gender: genderParam,
+          user_image_base64: base64ToUse,
+          user_image_mime_type: mimeTypeToUse,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.generated_image) {
+        logger.debug(`Successfully generated image for ${genreId}`);
+        
+        // Update the specific genre preview with the generated image
+        setGenrePreviews((prev) =>
+          prev.map((preview) =>
+            preview.genre_id === genreId
+              ? {
+                  ...preview,
+                  preview_image_url: data.generated_image.data_url,
+                  cover_image: data.generated_image.data_url,
+                  generated_image_url: data.generated_image.data_url,
+                  is_generating: false,
+                }
+              : preview
+          )
+        );
+      } else {
+        logger.warn(`Failed to generate image for ${genreId}:`, data.error);
+        // Mark as not generating but keep original image
+        setGenrePreviews((prev) =>
+          prev.map((preview) =>
+            preview.genre_id === genreId
+              ? { ...preview, is_generating: false }
+              : preview
+          )
+        );
+      }
+    } catch (error) {
+      logger.error(`Error generating image for ${genreId}:`, error);
+      setGenrePreviews((prev) =>
+        prev.map((preview) =>
+          preview.genre_id === genreId
+            ? { ...preview, is_generating: false }
+            : preview
+        )
+      );
+    }
+  }, [userImageBase64, userImageMimeType]);
+
+  // Trigger background image generation when genre previews are set
+  const triggerBackgroundGeneration = useCallback((previews: GenrePreview[], genderParam: Gender, imageBase64: string | null, imageMimeType: string | null) => {
+    logger.info(`Triggering background generation for ${previews.length} genres, user image: ${!!imageBase64}`);
+    
+    // Generate images one by one to avoid rate limiting
+    previews.forEach((preview, index) => {
+      if (preview.is_generating) {
+        // Stagger the requests to avoid overwhelming the API
+        setTimeout(() => {
+          generateSingleImage(preview.genre_id, genderParam, imageBase64, imageMimeType);
+        }, index * 2000); // 2 second delay between each request
+      }
+    });
+  }, [generateSingleImage]);
 
   // ===== Conversation =====
   const [messages, setMessages] = useState<Message[]>([]);
@@ -61,7 +142,7 @@ export default function MirrorMirrorApp() {
     loading: "conversation",
     "genre-list": "conversation",
     "coordinate-list": "genre-list",
-    "item-details": "coordinate-list",
+    "item-details": "genre-list", // 直接コーデリストに戻る
     "shop-map": "item-details",
   };
 
@@ -91,14 +172,21 @@ export default function MirrorMirrorApp() {
     generateCoordinates: async ({ gender: g, image_id }: { gender: string; image_id: string }): Promise<string> => {
       setCurrentView("loading");
       try {
+        // Use refs for the latest image data (avoids stale closure issues)
+        const currentImageBase64 = userImageBase64Ref.current;
+        const currentImageMimeType = userImageMimeTypeRef.current;
+        
+        logger.info(`generateCoordinates called: gender=${g}, image_id=${image_id}`);
+        logger.info(`User image from ref: ${!!currentImageBase64}, mime: ${currentImageMimeType}`);
+        
         const res = await fetch("/api/generate-coordinates", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             gender: g,
             image_id,
-            image_base64: userImageBase64,
-            mime_type: userImageMimeType,
+            image_base64: currentImageBase64,
+            mime_type: currentImageMimeType,
           }),
         });
 
@@ -107,6 +195,11 @@ export default function MirrorMirrorApp() {
         if (data.genre_previews) {
           setGenrePreviews(data.genre_previews);
           setCurrentView("genre-list");
+
+          // Trigger background image generation for each genre
+          // Use refs for the latest image data
+          triggerBackgroundGeneration(data.genre_previews, g as Gender, currentImageBase64, currentImageMimeType);
+
           return JSON.stringify({
             success: true,
             generated_count: data.genre_previews.length,
@@ -213,7 +306,7 @@ export default function MirrorMirrorApp() {
       setCurrentView(prevView);
       return JSON.stringify({ success: true, current_view: prevView });
     },
-  }), [coordinates, currentView, gender, userImageBase64, userImageId, userImageMimeType, userLocation, viewHistory]);
+  }), [coordinates, currentView, gender, triggerBackgroundGeneration, userImageBase64, userImageId, userImageMimeType, userLocation, viewHistory]);
 
   // ===== ElevenLabs Conversation Hook =====
   const conversation = useConversation({
@@ -296,19 +389,70 @@ export default function MirrorMirrorApp() {
     await conversation.endSession();
   }, [conversation]);
 
+  // ===== Auto Generate Coordinates after Image Upload =====
+  const autoGenerateCoordinates = useCallback(async (imageBase64: string, imageMimeType: string) => {
+    // Use current gender or default to "mens"
+    const currentGender = gender || "mens";
+    
+    logger.info(`Auto-generating coordinates: gender=${currentGender}`);
+    setCurrentView("loading");
+    
+    try {
+      const res = await fetch("/api/generate-coordinates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gender: currentGender,
+          image_id: `img-${Date.now()}`,
+          image_base64: imageBase64,
+          mime_type: imageMimeType,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.genre_previews) {
+        setGenrePreviews(data.genre_previews);
+        setCurrentView("genre-list");
+
+        // Trigger background image generation for each genre
+        triggerBackgroundGeneration(data.genre_previews, currentGender as Gender, imageBase64, imageMimeType);
+        
+        logger.info(`Auto-generated ${data.genre_previews.length} genre previews`);
+      } else {
+        logger.error("Failed to auto-generate coordinates");
+        setCurrentView("conversation");
+      }
+    } catch (error) {
+      logger.error("Auto-generate error:", error);
+      setCurrentView("conversation");
+    }
+  }, [gender, triggerBackgroundGeneration]);
+
   // ===== Image Upload Handler =====
   const handleImageUploaded = useCallback(
     (imageId: string, base64: string, mimeType: string) => {
+      logger.info(`Image uploaded: id=${imageId}, base64 length=${base64.length}, mime=${mimeType}`);
+      
+      // Update both state and refs
       setUserImageId(imageId);
       setUserImageBase64(base64);
       setUserImageMimeType(mimeType);
+      
+      // Update refs immediately (refs are synchronous, unlike state)
+      userImageBase64Ref.current = base64;
+      userImageMimeTypeRef.current = mimeType;
 
+      // Resolve the promise for ElevenLabs (if waiting)
       if (imageUploadResolverRef.current) {
         imageUploadResolverRef.current({ success: true, image_id: imageId });
         imageUploadResolverRef.current = null;
       }
+      
+      // Auto-trigger coordinate generation (don't wait for ElevenLabs)
+      autoGenerateCoordinates(base64, mimeType);
     },
-    []
+    [autoGenerateCoordinates]
   );
 
   // ===== Manual Gender Selection =====
@@ -337,9 +481,19 @@ export default function MirrorMirrorApp() {
         });
 
         const data = await res.json();
-        setCoordinates(data.coordinates || []);
+        const coordinateList = data.coordinates || [];
+        setCoordinates(coordinateList);
         setSelectedGenreId(genreId);
-        setCurrentView("coordinate-list");
+        
+        // 直接最初のコーディネートを選択してアイテム詳細に遷移
+        if (coordinateList.length > 0) {
+          const firstCoord = coordinateList[0];
+          setSelectedCoordinate(firstCoord);
+          setItems(firstCoord.items || []);
+          setCurrentView("item-details");
+        } else {
+          setCurrentView("genre-list");
+        }
       } catch {
         setCurrentView("genre-list");
       }
@@ -421,14 +575,6 @@ export default function MirrorMirrorApp() {
         />
       )}
 
-      {currentView === "coordinate-list" && selectedGenreId && (
-        <CoordinateListView
-          coordinates={coordinates}
-          genreId={selectedGenreId}
-          onSelectCoordinate={handleSelectCoordinate}
-          onBack={handleGoBack}
-        />
-      )}
 
       {currentView === "item-details" && selectedCoordinate && (
         <ItemDetailsView

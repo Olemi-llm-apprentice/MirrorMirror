@@ -50,3 +50,6 @@ Desktop.ini
 /coverage
 
 /scripts
+
+# Generated images (AI-generated coordinate images)
+/generated-images
