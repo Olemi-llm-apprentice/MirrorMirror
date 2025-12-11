@@ -57,15 +57,15 @@ export function VoicePanel({
             <div className="flex flex-col">
               <span className="text-sm font-medium text-white/90">
                 {!isConnected
-                  ? "タップで開始"
+                  ? "Tap to start"
                   : isSpeaking
-                  ? "AIが話しています..."
+                  ? "AI is speaking..."
                   : isListening
-                  ? "聞いています..."
-                  : "準備完了"}
+                  ? "Listening..."
+                  : "Ready"}
               </span>
               <span className="text-xs text-white/50">
-                {isConnected ? "音声認識中" : "MirrorMirror AI"}
+                {isConnected ? "Voice recognition active" : "MirrorMirror AI"}
               </span>
             </div>
           </div>

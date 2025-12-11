@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { Gender } from "@/types";
 
 interface ConversationPanelProps {
@@ -17,39 +18,53 @@ export function ConversationPanel({
     <div className="min-h-screen flex flex-col pb-32">
       {/* Header */}
       <div className="pt-12 pb-8 px-6 text-center">
-        <h1 className="font-display text-5xl tracking-wider text-gradient mb-2">
+        <h1 className="font-display text-5xl tracking-wider text-gray-800 mb-2">
           MIRROR MIRROR
         </h1>
-        <p className="text-white/60 text-sm">AI ファッションコンシェルジュ</p>
+        <p className="text-gray-600 text-sm">AI Fashion Concierge</p>
       </div>
 
       {/* Gender Selection */}
       <div className="px-6 mb-8">
-        <p className="text-center text-white/80 mb-4 text-sm">
-          スタイルを選択してください
+        <p className="text-center text-gray-700 mb-4 text-sm">
+          Please select your style
         </p>
-        <div className="flex gap-4 justify-center">
+        <div className="flex gap-6 justify-center">
           <button
             onClick={() => onSelectGender("mens")}
-            className={`flex-1 max-w-[160px] py-4 rounded-2xl font-medium transition-all duration-300 ${
+            className={`flex-1 max-w-[220px] py-8 rounded-3xl font-medium transition-all duration-300 bg-transparent ${
               gender === "mens"
-                ? "bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-lg shadow-blue-500/30 scale-105"
-                : "glass hover:bg-white/10 text-white/80"
+                ? "border-4 border-blue-500 shadow-lg scale-105 text-gray-800"
+                : "border-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-white/30"
             }`}
           >
-            <div className="text-3xl mb-2">👔</div>
-            <span>メンズ</span>
+            <div className="relative w-full aspect-square mb-4 px-4">
+              <Image
+                src="/gender_man.png"
+                alt="Men's"
+                fill
+                className="object-contain"
+              />
+            </div>
+            <span className="text-lg">Men&apos;s</span>
           </button>
           <button
             onClick={() => onSelectGender("ladies")}
-            className={`flex-1 max-w-[160px] py-4 rounded-2xl font-medium transition-all duration-300 ${
+            className={`flex-1 max-w-[220px] py-8 rounded-3xl font-medium transition-all duration-300 bg-transparent ${
               gender === "ladies"
-                ? "bg-gradient-to-br from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-500/30 scale-105"
-                : "glass hover:bg-white/10 text-white/80"
+                ? "border-4 border-pink-500 shadow-lg scale-105 text-gray-800"
+                : "border-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-white/30"
             }`}
           >
-            <div className="text-3xl mb-2">👗</div>
-            <span>レディース</span>
+            <div className="relative w-full aspect-square mb-4 px-4">
+              <Image
+                src="/gender_woman.png"
+                alt="Women's"
+                fill
+                className="object-contain"
+              />
+            </div>
+            <span className="text-lg">Women&apos;s</span>
           </button>
         </div>
       </div>
@@ -59,10 +74,10 @@ export function ConversationPanel({
         {messages.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4 animate-float">✨</div>
-            <p className="text-white/60 text-sm">
-              マイクボタンをタップして
+            <p className="text-gray-600 text-sm">
+              Tap the microphone button
               <br />
-              会話を始めましょう
+              to start conversation
             </p>
           </div>
         ) : (
@@ -77,8 +92,8 @@ export function ConversationPanel({
               <div
                 className={`max-w-[80%] px-4 py-3 rounded-2xl ${
                   msg.source === "user"
-                    ? "bg-accent-rose/80 text-white rounded-br-sm"
-                    : "glass text-white/90 rounded-bl-sm"
+                    ? "bg-red-600 text-white rounded-br-sm"
+                    : "bg-white/90 text-gray-800 border border-gray-200 rounded-bl-sm"
                 }`}
               >
                 <p className="text-sm leading-relaxed">{msg.text}</p>
@@ -86,13 +101,6 @@ export function ConversationPanel({
             </div>
           ))
         )}
-      </div>
-
-      {/* Decorative Elements */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-accent-rose/10 rounded-full blur-3xl" />
-        <div className="absolute top-40 right-10 w-40 h-40 bg-accent-cyan/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-40 left-1/2 w-60 h-60 bg-secondary-light/20 rounded-full blur-3xl" />
       </div>
     </div>
   );
