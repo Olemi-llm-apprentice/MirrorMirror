@@ -156,29 +156,17 @@ export async function POST(request: NextRequest) {
     if (user_image_base64 && user_image_mime_type) {
       // Virtual try-on: Apply coordinate outfit to user's body
       prompt = `バーチャル試着画像を生成してください。
-
 【1枚目の画像】ユーザーの写真です。この人物の顔と体型を使用します。
 【2枚目の画像】コーディネート参照画像です。この服装をそのまま使用します。
-
 重要な指示:
-- ユーザーの顔、髪型、体型をそのまま維持してください
-- コーディネート参照画像の服装（トップス、ボトムス、靴、アクセサリー等）を完全に再現してください
-- 服のデザイン、色、柄、素材感を変えないでください
-- ユーザーがその服を実際に着ているようなリアルな合成画像を作成してください
-- 全身が見えるポーズで、おしゃれなファッション撮影風の背景にしてください
-- 高品質でリアルな画像を生成してください
-
-服装は絶対に変更せず、ユーザーの体にフィットするように調整してください。`;
-    } else {
-      // No user image: Just enhance the coordinate image
-      prompt = `このコーディネート画像を、よりおしゃれなファッション撮影風に仕上げてください。
-
-重要な指示:
-- 服装のデザイン、色、柄は絶対に変更しないでください
-- 同じコーディネートをそのまま維持してください
-- 背景をスタイリッシュに改善してください
-- ライティングと画質を向上させてください
-- プロフェッショナルなファッション写真のクオリティで生成してください`;
+ユーザーの顔、髪型、体型をそのまま維持してください
+コーディネート参照画像の服装（トップス、ボトムス、靴、アクセサリー等）を完全に再現してください
+服のデザイン、色、柄、素材感を変えないでください
+ユーザーがその服を実際に着ているようなリアルな合成画像を作成してください
+全身が見えるポーズで、おしゃれなファッション撮影風の背景にしてください
+高品質でリアルな画像を生成してください
+服装は絶対に変更せず、ユーザーの体にフィットするように調整してください。
+【1枚目の画像】ユーザーの写真です。この人物の顔と体型を必ず保持するようにしてください。`;
     }
 
     // Build contents array
@@ -233,11 +221,13 @@ export async function POST(request: NextRequest) {
     serverLogger.info(`Generating AI image for ${genreInfo.name} using gemini-2.5-flash-image...`);
 
     // Call Gemini 2.5 Flash Image model (nanobanana)
+    // temperature低めで一貫性を向上
     const response = await client.models.generateContent({
       model: "gemini-2.5-flash-image",
       contents: contents,
       config: {
         responseModalities: [Modality.TEXT, Modality.IMAGE],
+        temperature: 0.4, // 低めの温度で一貫性を向上
       },
     });
 

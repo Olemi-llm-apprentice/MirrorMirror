@@ -23,12 +23,12 @@ export function ItemDetailsView({
       <div className="pt-8 pb-4 px-6">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span>戻る</span>
+          <span>Back</span>
         </button>
       </div>
 
@@ -54,34 +54,34 @@ export function ItemDetailsView({
 
       {/* Price Summary */}
       <div className="px-6 mb-6">
-        <div className="glass rounded-2xl p-4 flex justify-between items-center">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 flex justify-between items-center shadow">
           <div>
-            <p className="text-white/60 text-sm">合計金額</p>
-            <p className="text-2xl font-bold text-gradient">
+            <p className="text-gray-600 text-sm">Total Price</p>
+            <p className="text-2xl font-bold text-red-600">
               ¥{totalPrice.toLocaleString()}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-white/60 text-sm">アイテム数</p>
-            <p className="text-xl font-medium text-white">{items.length}点</p>
+            <p className="text-gray-600 text-sm">Items</p>
+            <p className="text-xl font-medium text-gray-800">{items.length} pcs</p>
           </div>
         </div>
       </div>
 
       {/* Items List */}
       <div className="flex-1 px-6 overflow-y-auto">
-        <h3 className="text-white/60 text-sm mb-4 uppercase tracking-wider">
-          アイテム一覧
+        <h3 className="text-gray-600 text-sm mb-4 uppercase tracking-wider">
+          Item List
         </h3>
         <div className="space-y-4">
           {items.map((item, index) => (
             <div
               key={item.item_id}
-              className="card-interactive flex gap-4 animate-slide-up"
+              className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow hover:shadow-lg transition-shadow flex gap-4 animate-slide-up"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               {/* Item Image */}
-              <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-white/5">
+              <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
                 <img
                   src={item.image_url}
                   alt={item.name}
@@ -94,10 +94,10 @@ export function ItemDetailsView({
 
               {/* Item Info */}
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-accent-cyan mb-1">{item.brand}</p>
-                <p className="font-medium text-white truncate">{item.name}</p>
-                <p className="text-white/60 text-xs mt-1">{item.category}</p>
-                <p className="text-accent-gold font-medium mt-2">
+                <p className="text-xs text-blue-600 mb-1">{item.brand}</p>
+                <p className="font-medium text-gray-800 truncate">{item.name}</p>
+                <p className="text-gray-500 text-xs mt-1">{item.category}</p>
+                <p className="text-amber-600 font-medium mt-2">
                   ¥{item.price.toLocaleString()}
                 </p>
               </div>
@@ -105,9 +105,9 @@ export function ItemDetailsView({
               {/* Shop Button */}
               <button
                 onClick={() => onShowShopMap(item.item_id)}
-                className="flex-shrink-0 w-10 h-10 rounded-xl glass flex items-center justify-center hover:bg-white/20 transition-colors"
+                className="flex-shrink-0 w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
               >
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
@@ -119,13 +119,12 @@ export function ItemDetailsView({
 
       {/* Voice Hint */}
       <div className="px-6 mt-6">
-        <div className="glass rounded-2xl p-4 text-center">
-          <p className="text-white/60 text-xs">
-            🎤 「店舗を探して」で近くの取扱店を検索できます
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 text-center shadow">
+          <p className="text-gray-600 text-xs">
+            🎤 Say "Find a shop" to search nearby stores
           </p>
         </div>
       </div>
     </div>
   );
 }
-

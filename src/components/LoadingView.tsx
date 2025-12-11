@@ -7,11 +7,11 @@ interface LoadingViewProps {
 }
 
 const LOADING_MESSAGES = [
-  "あなたにぴったりのスタイルを探しています...",
-  "トレンドをチェック中...",
-  "コーディネートを生成しています...",
-  "もう少しお待ちください...",
-  "素敵なスタイルを見つけました！",
+  "Finding the perfect style for you...",
+  "Checking the latest trends...",
+  "Generating coordinates...",
+  "Almost there...",
+  "Found some great styles!",
 ];
 
 export function LoadingView({ message }: LoadingViewProps) {
@@ -38,19 +38,19 @@ export function LoadingView({ message }: LoadingViewProps) {
       {/* Main Animation */}
       <div className="relative w-48 h-48 mb-8">
         {/* Outer Ring */}
-        <div className="absolute inset-0 rounded-full border-4 border-white/10" />
+        <div className="absolute inset-0 rounded-full border-4 border-gray-300" />
         
         {/* Spinning Ring */}
-        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-accent-rose animate-spin" 
+        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-red-500 animate-spin" 
              style={{ animationDuration: "1.5s" }} />
         
         {/* Middle Ring */}
-        <div className="absolute inset-4 rounded-full border-2 border-white/5" />
-        <div className="absolute inset-4 rounded-full border-2 border-transparent border-b-accent-cyan animate-spin"
+        <div className="absolute inset-4 rounded-full border-2 border-gray-200" />
+        <div className="absolute inset-4 rounded-full border-2 border-transparent border-b-blue-500 animate-spin"
              style={{ animationDuration: "2s", animationDirection: "reverse" }} />
         
         {/* Inner Content */}
-        <div className="absolute inset-8 rounded-full glass flex items-center justify-center">
+        <div className="absolute inset-8 rounded-full bg-white/80 shadow-lg flex items-center justify-center">
           <div className="text-5xl animate-float">✨</div>
         </div>
 
@@ -58,7 +58,7 @@ export function LoadingView({ message }: LoadingViewProps) {
         {[...Array(6)].map((_, i) => (
           <div
             key={i}
-            className="absolute w-2 h-2 rounded-full bg-accent-gold/60"
+            className="absolute w-2 h-2 rounded-full bg-amber-400"
             style={{
               top: `${20 + Math.random() * 60}%`,
               left: `${20 + Math.random() * 60}%`,
@@ -71,20 +71,20 @@ export function LoadingView({ message }: LoadingViewProps) {
 
       {/* Message */}
       <div className="text-center mb-8">
-        <p className="text-lg text-white/90 font-medium animate-pulse">
+        <p className="text-lg text-gray-800 font-medium animate-pulse">
           {message || LOADING_MESSAGES[currentMessage]}
         </p>
       </div>
 
       {/* Progress Bar */}
       <div className="w-full max-w-xs">
-        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+        <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-accent-rose to-accent-cyan transition-all duration-500"
+            className="h-full bg-gradient-to-r from-red-500 to-blue-500 transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
-        <p className="text-center text-white/40 text-xs mt-2">
+        <p className="text-center text-gray-500 text-xs mt-2">
           {Math.round(progress)}%
         </p>
       </div>
@@ -94,7 +94,7 @@ export function LoadingView({ message }: LoadingViewProps) {
         {["👔", "👗", "👟", "👜", "🧥"].map((emoji, i) => (
           <div
             key={i}
-            className="w-10 h-10 rounded-lg glass flex items-center justify-center text-xl animate-bounce"
+            className="w-10 h-10 rounded-lg bg-white/80 shadow flex items-center justify-center text-xl animate-bounce"
             style={{ animationDelay: `${i * 150}ms` }}
           >
             {emoji}
@@ -104,4 +104,3 @@ export function LoadingView({ message }: LoadingViewProps) {
     </div>
   );
 }
-

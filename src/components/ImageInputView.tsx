@@ -16,6 +16,47 @@ export function ImageInputView({ onImageUploaded, onBack }: ImageInputViewProps)
   const [showCamera, setShowCamera] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
 
+  // リサイズして品質を安定させる
+  const resizeImage = useCallback((file: File, maxWidth: number, maxHeight: number): Promise<{ base64: string; mimeType: string }> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        // 元のサイズを取得
+        let { width, height } = img;
+        logger.info(`Original image size: ${width}x${height}`);
+        
+        // アスペクト比を維持しながらリサイズ
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+          logger.info(`Resized to: ${width}x${height}`);
+        }
+        
+        // Canvasでリサイズ
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Failed to get canvas context"));
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // JPEGで出力（品質85%）- ファイルサイズを抑える
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        const base64 = dataUrl.split(",")[1];
+        
+        logger.info(`Resized image base64 length: ${base64.length}`);
+        resolve({ base64, mimeType: "image/jpeg" });
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = URL.createObjectURL(file);
+    });
+  }, []);
+
   const processImage = useCallback(async (file: File) => {
     setIsProcessing(true);
     logger.info(`Processing image: ${file.name}, size: ${file.size}, type: ${file.type}`);
@@ -25,29 +66,20 @@ export function ImageInputView({ onImageUploaded, onBack }: ImageInputViewProps)
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
 
-      // Convert to base64
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        const base64 = result.split(",")[1];
-        const imageId = `img-${Date.now()}`;
-        
-        logger.info(`Image converted to base64: length=${base64.length}, mime=${file.type}`);
-        logger.info(`Calling onImageUploaded with imageId=${imageId}`);
-        
-        onImageUploaded(imageId, base64, file.type);
-        setIsProcessing(false);
-      };
-      reader.onerror = () => {
-        logger.error("FileReader error:", reader.error);
-        setIsProcessing(false);
-      };
-      reader.readAsDataURL(file);
+      // リサイズしてbase64に変換（最大1024x1024）
+      const { base64, mimeType } = await resizeImage(file, 1024, 1024);
+      const imageId = `img-${Date.now()}`;
+      
+      logger.info(`Image processed: base64 length=${base64.length}, mime=${mimeType}`);
+      logger.info(`Calling onImageUploaded with imageId=${imageId}`);
+      
+      onImageUploaded(imageId, base64, mimeType);
+      setIsProcessing(false);
     } catch (error) {
       logger.error("Error processing image:", error);
       setIsProcessing(false);
     }
-  }, [onImageUploaded]);
+  }, [onImageUploaded, resizeImage]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -109,26 +141,26 @@ export function ImageInputView({ onImageUploaded, onBack }: ImageInputViewProps)
             stopCamera();
             onBack();
           }}
-          className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span>戻る</span>
+          <span>Back</span>
         </button>
       </div>
 
       {/* Title */}
       <div className="text-center px-6 mb-8">
-        <h2 className="font-display text-3xl text-gradient mb-2">CAPTURE YOUR STYLE</h2>
-        <p className="text-white/60 text-sm">あなたの写真をアップロード</p>
+        <h2 className="font-display text-3xl text-gray-800 mb-2">CAPTURE YOUR STYLE</h2>
+        <p className="text-gray-600 text-sm">Upload your photo</p>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 px-6">
         {showCamera ? (
           // Camera View
-          <div className="relative rounded-3xl overflow-hidden glass aspect-[3/4] max-w-sm mx-auto">
+          <div className="relative rounded-3xl overflow-hidden bg-white/80 shadow-lg aspect-[3/4] max-w-sm mx-auto">
             <video
               ref={videoRef}
               autoPlay
@@ -139,9 +171,9 @@ export function ImageInputView({ onImageUploaded, onBack }: ImageInputViewProps)
             <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-4">
               <button
                 onClick={stopCamera}
-                className="w-14 h-14 rounded-full glass flex items-center justify-center"
+                className="w-14 h-14 rounded-full bg-white/80 shadow flex items-center justify-center"
               >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -149,15 +181,15 @@ export function ImageInputView({ onImageUploaded, onBack }: ImageInputViewProps)
                 onClick={capturePhoto}
                 className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-xl hover:scale-105 transition-transform"
               >
-                <div className="w-14 h-14 rounded-full border-4 border-primary" />
+                <div className="w-14 h-14 rounded-full border-4 border-red-500" />
               </button>
               <button
                 onClick={() => {
                   // Switch camera
                 }}
-                className="w-14 h-14 rounded-full glass flex items-center justify-center"
+                className="w-14 h-14 rounded-full bg-white/80 shadow flex items-center justify-center"
               >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
               </button>
@@ -165,17 +197,17 @@ export function ImageInputView({ onImageUploaded, onBack }: ImageInputViewProps)
           </div>
         ) : previewUrl ? (
           // Preview
-          <div className="relative rounded-3xl overflow-hidden glass aspect-[3/4] max-w-sm mx-auto animate-fade-in">
+          <div className="relative rounded-3xl overflow-hidden bg-white/80 shadow-lg aspect-[3/4] max-w-sm mx-auto animate-fade-in">
             <img
               src={previewUrl}
               alt="Preview"
               className="w-full h-full object-cover"
             />
             {isProcessing && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 border-4 border-accent-rose border-t-transparent rounded-full animate-spin" />
-                  <p className="text-white text-sm">処理中...</p>
+                  <div className="w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-gray-800 text-sm">Processing...</p>
                 </div>
               </div>
             )}
@@ -185,32 +217,32 @@ export function ImageInputView({ onImageUploaded, onBack }: ImageInputViewProps)
           <div className="space-y-4 max-w-sm mx-auto">
             <button
               onClick={startCamera}
-              className="w-full card-interactive flex items-center gap-4 py-6"
+              className="w-full bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow hover:shadow-lg transition-shadow flex items-center gap-4 py-6"
             >
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent-rose to-pink-600 flex items-center justify-center">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center">
                 <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
               <div className="text-left">
-                <p className="font-medium text-white">カメラで撮影</p>
-                <p className="text-sm text-white/60">今すぐ写真を撮る</p>
+                <p className="font-medium text-gray-800">Take Photo</p>
+                <p className="text-sm text-gray-600">Capture now</p>
               </div>
             </button>
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full card-interactive flex items-center gap-4 py-6"
+              className="w-full bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow hover:shadow-lg transition-shadow flex items-center gap-4 py-6"
             >
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent-cyan to-blue-600 flex items-center justify-center">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
                 <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
               <div className="text-left">
-                <p className="font-medium text-white">写真を選択</p>
-                <p className="text-sm text-white/60">ギャラリーから選ぶ</p>
+                <p className="font-medium text-gray-800">Choose Photo</p>
+                <p className="text-sm text-gray-600">Select from gallery</p>
               </div>
             </button>
 
@@ -227,15 +259,14 @@ export function ImageInputView({ onImageUploaded, onBack }: ImageInputViewProps)
 
       {/* Tips */}
       <div className="px-6 mt-8">
-        <div className="glass rounded-2xl p-4">
-          <p className="text-white/80 text-xs text-center">
-            💡 明るい場所で、顔と全身が写るように撮影すると
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow">
+          <p className="text-gray-700 text-xs text-center">
+            💡 For better recommendations, take a photo in good lighting
             <br />
-            より正確なコーディネート提案ができます
+            showing your face and full body
           </p>
         </div>
       </div>
     </div>
   );
 }
-
