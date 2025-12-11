@@ -26,12 +26,15 @@ export default function LandingPage() {
 
   // Create extended array for infinite scrolling effect
   const getExtendedCategories = () => {
-    // Add 2 items before and 3 items after for smooth infinite scrolling
+    // Create 3 copies of the categories array for smooth infinite scrolling
     const extended = [];
-    for (let i = -2; i < categories.length + 3; i++) {
-      const index =
-        ((i % categories.length) + categories.length) % categories.length;
-      extended.push({ ...categories[index], key: i });
+    for (let copy = 0; copy < 3; copy++) {
+      categories.forEach((category, index) => {
+        extended.push({
+          ...category,
+          key: `${copy}-${index}`
+        });
+      });
     }
     return extended;
   };
@@ -79,8 +82,8 @@ export default function LandingPage() {
                     className="flex transition-transform duration-700 ease-in-out"
                     style={{
                       transform: `translateX(calc(-${
-                        (currentSlide + 2) * (100 / 3)
-                      }% - ${(currentSlide + 2) * 1.5}rem))`,
+                        (currentSlide + categories.length + 2) * (100 / 3)
+                      }% - ${(currentSlide + categories.length + 2) * 1.5}rem))`,
                     }}
                   >
                     {getExtendedCategories().map((category, index) => (
