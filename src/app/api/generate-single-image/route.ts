@@ -167,6 +167,14 @@ export async function POST(request: NextRequest) {
 高品質でリアルな画像を生成してください
 服装は絶対に変更せず、ユーザーの体にフィットするように調整してください。
 【1枚目の画像】ユーザーの写真です。この人物の顔と体型を必ず保持するようにしてください。`;
+    } else {
+      // No user image: Generate model wearing the outfit
+      prompt = `この参照画像のコーディネートを着用したファッションモデルの全身画像を生成してください。
+重要な指示:
+参照画像の服装（トップス、ボトムス、靴、アクセサリー等）を完全に再現してください
+服のデザイン、色、柄、素材感を変えないでください
+おしゃれなファッション撮影風のポーズと背景にしてください
+高品質でリアルな画像を生成してください`;
     }
 
     // Build contents array
@@ -223,7 +231,8 @@ export async function POST(request: NextRequest) {
     // Call Gemini 2.5 Flash Image model (nanobanana)
     // temperature低めで一貫性を向上
     const response = await client.models.generateContent({
-      model: "gemini-2.5-flash-image",
+      //model: "gemini-2.5-flash-image",
+      model: "gemini-3-pro-image-preview",
       contents: contents,
       config: {
         responseModalities: [Modality.TEXT, Modality.IMAGE],
